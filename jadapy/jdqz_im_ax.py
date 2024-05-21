@@ -41,7 +41,7 @@ def _set_testspace(testspace, target, alpha, beta, dtype, ctype):
 def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock_tol=None, prec=None,
          maxit=1000, subspace_dimensions=(20, 40), initial_subspaces=None,
          arithmetic='real', testspace='Harmonic Petrov',
-         return_eigenvectors=False, return_subspaces=False,
+         return_eigenvectors=False, return_subspaces=False, return_matrix=False,
          interface=None):
 
     if arithmetic not in ['real', 'complex', 'r', 'c']:
@@ -205,8 +205,8 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
                 QZ[k:k+nev, i] = dot(Q[:, k:k+nev], Y[:, i])
             QZ[k:k+nev, k:k+nev] = dot(Q[:, k:k+nev], Y[:, k:k+nev])
             #print(QZ[:k+nev,:k+nev])
-            print(alpha.shape,beta.shape)
-            print(A.shape,B.shape, Q.shape, k,nev)
+            #print(alpha.shape,beta.shape)
+            #print(A.shape,B.shape, Q.shape, k,nev)
             r[:, 0:nev] = A @ Q[:, k:k+nev] @ beta - B @ Q[:, k:k+nev] @ alpha
             orthogonalize(Z[:, 0:k+nev], r[:, 0:nev])
 
@@ -223,7 +223,7 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
             # Store converged Petrov pairs
             if rnorm <= tol and m > nev:
                 # Compute RA and RB so we can compute the eigenvectors
-                if return_eigenvectors:
+                if return_eigenvectors or return_matrix:
                     if k > 0:
                         AQ = AV[:, 0:m] @ UR[:, 0:nev]
                         BQ = BV[:, 0:m] @ UR[:, 0:nev]
@@ -322,4 +322,12 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
 
     if return_subspaces:
         return aconv[0:num], bconv[0:num], Q[:, 0:k], Z[:, 0:k]
-    return aconv[0:num], bconv[0:num]
+
+    if return_matrix:
+        #RAU = Z[:,0:k].T @ AV
+        #RBU = Z[:,0:k].T @ BV
+        #A_ = numpy.bmat([[RA, RAU[:,:len(S)]], [numpy.zeros((len(S),len(RA))), S]])
+        #B_ = numpy.bmat([[RB, RBU[:,:len(T)]], [numpy.zeros((len(T),len(RB))), T]])
+        return RA, RB, Q[:, 0:k], Z[:, 0:k]
+    
+    return aconv[0:k], bconv[0:k]
