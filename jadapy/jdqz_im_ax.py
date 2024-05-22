@@ -328,6 +328,6 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
         #RBU = Z[:,0:k].T @ BV
         #A_ = numpy.bmat([[RA, RAU[:,:len(S)]], [numpy.zeros((len(S),len(RA))), S]])
         #B_ = numpy.bmat([[RB, RBU[:,:len(T)]], [numpy.zeros((len(T),len(RB))), T]])
-        return RA, RB, Q[:, 0:k], Z[:, 0:k]
+        return RA[0:k,0:k], RB[0:k,0:k], Q[:, 0:k], Z[:, 0:k]
     
     return aconv[0:k], bconv[0:k]
