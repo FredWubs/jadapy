@@ -119,6 +119,8 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
 
     cnt=1
 
+    conv_check=[1.0 for i in range(10)] 
+    conv_check2=[1.0 for i in range(20)] 
     while cnt<max_cnt and it <= maxit:
       while k < cnt*num and it <= maxit:
         if it == 1:
@@ -199,6 +201,7 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
             Q[:, k:k+nev] = V[:, 0:m] @ UR[:, 0:nev]
             Z[:, k:k+nev] = W[:, 0:m] @ UL[:, 0:nev]
             Y[:, k:k+nev] = prec(Z[:, k:k+nev], alpha, beta)
+            #Y[:, k:k+nev] = prec(Z[:, k:k+nev], target, 1.0)
 
             for i in range(k):
                 QZ[i, k:k+nev] = dot(Q[:, i], Y[:, k:k+nev])
@@ -219,9 +222,11 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
 
             if rnorm <= lock_tol:
                 sort_target = ev_est
+            conv_check[it % 10 ]=rnorm
+            conv_check2[it % 20 ]=rnorm
 
             # Store converged Petrov pairs
-            if rnorm <= tol and m > nev:
+            if (rnorm <= tol or max(conv_check) <= lock_tol or max(conv_check2) <= 100.*lock_tol) and m > nev:
                 # Compute RA and RB so we can compute the eigenvectors
                 if return_eigenvectors or return_matrix:
                     if k > 0:
@@ -243,6 +248,8 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
                     bconv[k] = evs[1, i]
                     k += 1
 
+                conv_check=[1.0 for i in range(10)] 
+                conv_check2=[1.0 for i in range(20)] 
                 if k >= (cnt+1)*num:
                     break
 
@@ -303,7 +310,6 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
 
     if return_eigenvectors:
         evs, v = scipy.linalg.eig(RA[0:k, 0:k], RB[0:k, 0:k], left=False, right=True, homogeneous_eigvals=True)
-
         if ctype == dtype:
             if return_subspaces:
                 return evs[0], evs[1], Q[:, 0:k] @ v, Q[:, 0:k], Z[:, 0:k]
@@ -320,14 +326,16 @@ def jdqz(A, B, num=5, max_cnt=5, target=Target.SmallestMagnitude, tol=1e-8, lock
             return evs[0], evs[1], Y[:, 0:k], Q[:, 0:k], Z[:, 0:k]
         return evs[0], evs[1], Y[:, 0:k]
 
-    if return_subspaces:
-        return aconv[0:num], bconv[0:num], Q[:, 0:k], Z[:, 0:k]
 
     if return_matrix:
         #RAU = Z[:,0:k].T @ AV
         #RBU = Z[:,0:k].T @ BV
         #A_ = numpy.bmat([[RA, RAU[:,:len(S)]], [numpy.zeros((len(S),len(RA))), S]])
         #B_ = numpy.bmat([[RB, RBU[:,:len(T)]], [numpy.zeros((len(T),len(RB))), T]])
-        return RA[0:k,0:k], RB[0:k,0:k], Q[:, 0:k], Z[:, 0:k]
+        evs, v = scipy.linalg.eig(RA[0:k, 0:k], RB[0:k, 0:k], left=False, right=True, homogeneous_eigvals=True)
+        return RA[0:k,0:k], RB[0:k,0:k], Q[:, 0:k] @ v, Q[:, 0:k], Z[:, 0:k]
+    
+    if return_subspaces:
+        return aconv[0:num], bconv[0:num], Q[:, 0:k], Z[:, 0:k]
     
     return aconv[0:k], bconv[0:k]
